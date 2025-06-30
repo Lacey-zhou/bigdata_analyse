@@ -11,6 +11,7 @@ import numpy as np
 from sqlalchemy import create_engine
 
 ############################################# 合并数据文件 ##########################################################
+print("数据合并中...")
 dir = r"C:\Users\Administrator\Desktop\RentFromDanke"
 data_list = []
 for i in range(1, 9):
