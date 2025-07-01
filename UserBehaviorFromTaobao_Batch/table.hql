@@ -6,6 +6,7 @@
 字段数：5
 */
 
+
 -- 建表
 drop table if exists user_behavior;
 create table user_behavior (
