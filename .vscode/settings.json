@@ -1,0 +1,13 @@
+{
+    "window.closeWhenEmpty": true,
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "off",
+    "workbench.colorTheme": "Visual Studio Dark",
+    "window.commandCenter": true,
+    "window.confirmSaveUntitledWorkspace": true,
+    "window.density.editorTabHeight": "default",
+    "window.zoomPerWindow": true,
+    "accessibility.windowTitleOptimized": true,
+    "debug.focusWindowOnBreak": true,
+    "window.autoDetectColorScheme": true
+}
