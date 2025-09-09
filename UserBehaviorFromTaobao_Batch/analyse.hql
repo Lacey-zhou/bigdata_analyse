@@ -1,6 +1,6 @@
 --1、用户流量及购物情况
 
---总访问量PV，总用户量UV
+--总访问量PV-8966106，总用户量UV-987991
 select sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,
        count(distinct user_id) as uv
 from user_behavior;
@@ -14,14 +14,15 @@ group by date(datetime)
 order by day;
 
 --每个用户的购物情况，加工到 user_behavior_count
-create table user_behavior_count as
-select user_id,
-       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   --点击数
-       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  --收藏数
-       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  --加购物车数
-       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  --购买数
-from user_behavior
-group by user_id;
+CREATE TABLE user_behavior_count AS
+SELECT 
+    user_id,
+    SUM(CASE WHEN behavior_type = 'pv' THEN 1 ELSE 0 END) AS pv,
+    SUM(CASE WHEN behavior_type = 'fav' THEN 1 ELSE 0 END) AS fav,
+    SUM(CASE WHEN behavior_type = 'cart' THEN 1 ELSE 0 END) AS cart,
+    SUM(CASE WHEN behavior_type = 'buy' THEN 1 ELSE 0 END) AS buy
+FROM user_behavior
+GROUP BY user_id;
 
 --点击数最多的用户前十
 select * from user_behavior_count order by pv desc limit 10;
@@ -43,10 +44,10 @@ select a.pv,
        round(a.buy / (a.fav + a.cart), 4) as favcart2buy,
        round(a.buy / a.pv, 4) as pv2buy
 from(
-select sum(pv) as pv,   --点击数
-       sum(fav) as fav,  --收藏数
-       sum(cart) as cart,  --加购物车数
-       sum(buy) as buy  --购买数
+select sum(pv) as pv,   
+       sum(fav) as fav,  
+       sum(cart) as cart, 
+       sum(buy) as buy 
 from user_behavior_count
 ) as a;
 
@@ -54,24 +55,26 @@ from user_behavior_count
 
 -- 一天的活跃时段分布
 select hour(datetime) as hour,
-       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   --点击数
-       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  --收藏数
-       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  --加购物车数
-       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  --购买数
+       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,  
+       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  
+       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart, 
+       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy 
 from user_behavior
 group by hour(datetime)
 order by hour;
 
---一周用户的活跃分布
-select pmod(datediff(datetime, '1920-01-01') - 3, 7) as weekday,
-       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   --点击数
-       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  --收藏数
-       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  --加购物车数
-       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  --购买数
+-- 一周用户的活跃分布
+select mod(datediff(datetime, '1920-01-01') - 3, 7) as weekday,
+       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   
+       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  
+       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  
+       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  
 from user_behavior
 where date(datetime) between '2017-11-27' and '2017-12-03'
-group by pmod(datediff(datetime, '1920-01-01') - 3, 7)
+group by mod(datediff(datetime, '1920-01-01') - 3, 7)
 order by weekday;
+
+
 
 --购买率高
 select *, buy / pv as buy_rate
@@ -124,7 +127,7 @@ limit 10;
 前 4/5 - 的用户打1分
 按照这个规则分别对用户时间间隔排名打分和购买频率排名打分，最后把两个分数合并在一起作为该名用户的最终评分。
 */
-with cte as(
+with user_rfm as(
 select user_id,
        datediff('2017-12-04', max(datetime)) as R,
        dense_rank() over(order by datediff('2017-12-04', max(datetime))) as R_rank,
@@ -133,7 +136,6 @@ select user_id,
 from user_behavior
 where behavior_type = 'buy'
 group by user_id)
-
 select user_id, R, R_rank, R_score, F, F_rank, F_score,  R_score + F_score AS score
 from(
 select *,
@@ -149,7 +151,7 @@ select *,
                                            when 4 then 2
                                            when 5 then 1
        end as F_score
-from cte
+from user_rfm
 ) as a
 order by score desc
 limit 20;
@@ -159,10 +161,10 @@ limit 20;
 
 --销量最高的商品
 select item_id ,
-       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   --点击数
-       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  --收藏数
-       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  --加购物车数
-       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  --购买数
+       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   
+       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  
+       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart, 
+       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  
 from user_behavior
 group by item_id
 order by buy desc
@@ -170,10 +172,10 @@ limit 10;
 
 --销量最高的商品大类
 select category_id ,
-       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,   --点击数
-       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  --收藏数
-       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  --加购物车数
-       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy  --购买数
+       sum(case when behavior_type = 'pv' then 1 else 0 end) as pv,  
+       sum(case when behavior_type = 'fav' then 1 else 0 end) as fav,  
+       sum(case when behavior_type = 'cart' then 1 else 0 end) as cart,  
+       sum(case when behavior_type = 'buy' then 1 else 0 end) as buy 
 from user_behavior
 group by category_id
 order by buy desc
